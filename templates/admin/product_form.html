@@ -1,0 +1,298 @@
+{% extends 'admin/base_site.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - 产品管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">{{ title }}</h2>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        
+        <div class="row">
+            <!-- 左侧主要表单 -->
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>基本信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">SKU <span class="text-danger">*</span></label>
+                                {{ form.sku }}
+                                {% if form.sku.errors %}
+                                    <div class="text-danger small">{{ form.sku.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">产品名称 <span class="text-danger">*</span></label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                    <div class="text-danger small">{{ form.name.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">URL标识 (Slug)</label>
+                            {{ form.slug }}
+                            <div class="form-text">若留空将自动根据名称生成</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">分类</label>
+                            {{ form.category }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">简短描述</label>
+                            {{ form.short_description }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">详细描述</label>
+                            {{ form.description }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>价格与库存</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">销售价格 <span class="text-danger">*</span></label>
+                                {{ form.price }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">成本价格</label>
+                                {{ form.cost_price }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">对比价格（划线价）</label>
+                                {{ form.compare_at_price }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">库存数量</label>
+                                {{ form.stock_quantity }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">低库存阈值</label>
+                                {{ form.low_stock_threshold }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">补货点</label>
+                                {{ form.reorder_level }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.is_track_inventory }}
+                                    <label class="form-check-label">跟踪库存</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.allow_backorder }}
+                                    <label class="form-check-label">允许缺货订购</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>属性与标记</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">重量 (kg)</label>
+                                {{ form.weight }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">尺寸 (LxWxH cm)</label>
+                                {{ form.dimensions }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">颜色</label>
+                                {{ form.color }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">尺码</label>
+                                {{ form.size }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">材质</label>
+                                {{ form.material }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">品牌</label>
+                                {{ form.brand }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-2 mb-3">
+                                <div class="form-check">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label">上架</label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <div class="form-check">
+                                    {{ form.is_featured }}
+                                    <label class="form-check-label">推荐</label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <div class="form-check">
+                                    {{ form.is_bestseller }}
+                                    <label class="form-check-label">热销</label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <div class="form-check">
+                                    {{ form.is_new }}
+                                    <label class="form-check-label">新品</label>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <div class="form-check">
+                                    {{ form.is_digital }}
+                                    <label class="form-check-label">数字产品</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">标签（逗号分隔）</label>
+                            {{ form.tags }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>SEO 信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Meta 标题</label>
+                            {{ form.meta_title }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Meta 描述</label>
+                            {{ form.meta_description }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Meta 关键词</label>
+                            {{ form.meta_keywords }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧图片区域 -->
+            <div class="col-lg-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>主图片</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            {{ form.main_image }}
+                            <div class="form-text">上传新主图将替换现有主图</div>
+                        </div>
+                        
+                        {% if object.get_main_image %}
+                            <div class="text-center">
+                                <img src="{{ object.get_main_image.image.url }}" class="img-fluid rounded" style="max-height: 200px;" alt="当前主图">
+                                <p class="mt-2 text-success"><strong>当前主图</strong></p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>附加图片（可多选）</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <input type="file" name="additional_images" multiple class="form-control" accept="image/*">
+                            <div class="form-text">按住 Ctrl（Mac 为 Command）可选择多张图片</div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if images %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5>已上传图片（{{ images|length }} 张）</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            {% for img in images %}
+                            <div class="col-6 position-relative">
+                                <img src="{{ img.image.url }}" class="img-fluid rounded" alt="{{ img.alt_text }}">
+                                {% if img.is_main %}
+                                    <span class="badge bg-success position-absolute top-0 start-0 m-2">主图</span>
+                                {% else %}
+                                    <button type="button" class="btn btn-sm btn-outline-primary position-absolute top-0 end-0 m-2"
+                                            hx-post="{% url 'products:set_main_image' img.pk %}"
+                                            hx-target="#image-list"
+                                            hx-swap="outerHTML">
+                                        设为主图
+                                    </button>
+                                {% endif %}
+                                <button type="button" class="btn btn-sm btn-danger position-absolute bottom-0 end-0 m-2"
+                                        hx-delete="{% url 'products:delete_product_image' img.pk %}"
+                                        hx-confirm="确定删除此图片？"
+                                        hx-target="#image-list"
+                                        hx-swap="outerHTML">
+                                    删除
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="mt-4 text-end">
+            <a href="{% url 'products:admin_product_list' %}" class="btn btn-secondary me-2">取消</a>
+            <button type="submit" class="btn btn-primary">保存产品</button>
+        </div>
+    </form>
+</div>
+
+<!-- 可选：如果使用 htmx 实现无刷新操作，请引入 -->
+{% comment %}
+<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+{% endcomment %}
+{% endblock %}

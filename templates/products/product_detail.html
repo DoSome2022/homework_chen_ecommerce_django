@@ -1,0 +1,333 @@
+{% extends "products/base.html" %}
+{% load static %}
+
+{% block title %}{{ product.name }} - 电商仓储管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 产品图片 -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-body">
+                <!-- 主图片 -->
+                {% with product.get_main_image as main_image %}
+                <div class="text-center mb-3">
+                    <img id="main-image" src="{{ main_image.image.url }}" 
+                         class="img-fluid" style="max-height: 400px;" 
+                         alt="{{ main_image.alt_text }}">
+                </div>
+                {% endwith %}
+                
+                <!-- 缩略图 -->
+                {% if product.images.count > 1 %}
+                <div class="row g-2">
+                    {% for image in product.get_images %}
+                    <div class="col-3">
+                        <img src="{{ image.image.url }}" 
+                             class="img-thumbnail thumb-image" 
+                             style="height: 80px; object-fit: cover; cursor: pointer;"
+                             onclick="document.getElementById('main-image').src='{{ image.image.url }}'"
+                             alt="{{ image.alt_text }}">
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- 产品信息 -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="card-title">{{ product.name }}</h2>
+                <p class="text-muted">{{ product.sku }}</p>
+                
+                <!-- 价格 -->
+                <div class="mb-3">
+                    <span class="fs-3 fw-bold text-primary">¥{{ product.price }}</span>
+                    {% if product.compare_at_price %}
+                    <span class="price-old fs-5 ms-2">¥{{ product.compare_at_price }}</span>
+                    <span class="badge bg-danger ms-2">-{{ product.discount_percentage|floatformat:0 }}%</span>
+                    {% endif %}
+                </div>
+                
+                <!-- 库存状态 -->
+                <div class="mb-3">
+                    {% with product.check_availability as availability %}
+                    {% if availability.available %}
+                    <div class="alert alert-success mb-0">
+                        <i class="fas fa-check-circle"></i> {{ availability.message }}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-danger mb-0">
+                        <i class="fas fa-times-circle"></i> {{ availability.message }}
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+                
+                <!-- 产品属性 -->
+                {% if product.weight or product.dimensions or product.color %}
+                <div class="mb-4">
+                    <h5>产品规格</h5>
+                    <table class="table table-sm">
+                        {% if product.weight %}
+                        <tr>
+                            <th width="30%">重量</th>
+                            <td>{{ product.weight }} kg</td>
+                        </tr>
+                        {% endif %}
+                        {% if product.dimensions %}
+                        <tr>
+                            <th>尺寸</th>
+                            <td>{{ product.dimensions }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if product.color %}
+                        <tr>
+                            <th>颜色</th>
+                            <td>{{ product.color }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if product.size %}
+                        <tr>
+                            <th>尺寸</th>
+                            <td>{{ product.size }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if product.material %}
+                        <tr>
+                            <th>材质</th>
+                            <td>{{ product.material }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if product.brand %}
+                        <tr>
+                            <th>品牌</th>
+                            <td>{{ product.brand }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+                {% endif %}
+                
+                <!-- 购买表单 -->
+                <form method="post" action="{% url 'cart:add' product.id %}">
+                    {% csrf_token %}
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">数量</label>
+                            <input type="number" name="quantity" class="form-control" 
+                                   value="1" min="1" 
+                                   {% if not product.in_stock %}disabled{% endif %}
+                                   max="{{ product.stock_quantity }}">
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        {% if product.in_stock %}
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-cart-plus"></i> 加入购物车
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn btn-secondary btn-lg" disabled>
+                            暂时缺货
+                        </button>
+                        {% endif %}
+                        
+                        {% if user.is_authenticated %}
+                        <button type="button" class="btn btn-outline-secondary">
+                            <i class="far fa-heart"></i> 加入收藏
+                        </button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 产品描述 -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="product-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="description-tab" data-bs-toggle="tab" 
+                                data-bs-target="#description" type="button" role="tab">
+                            产品描述
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="attributes-tab" data-bs-toggle="tab" 
+                                data-bs-target="#attributes" type="button" role="tab">
+                            规格参数
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" 
+                                data-bs-target="#reviews" type="button" role="tab">
+                            评价 ({{ review_stats.total }})
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="product-tabs-content">
+                    <!-- 描述 -->
+                    <div class="tab-pane fade show active" id="description" role="tabpanel">
+                        {{ product.description|linebreaks }}
+                    </div>
+                    
+                    <!-- 规格参数 -->
+                    <div class="tab-pane fade" id="attributes" role="tabpanel">
+                        {% if attributes %}
+                        <table class="table">
+                            {% for attr in attributes %}
+                            <tr>
+                                <th width="30%">{{ attr.attribute.name }}</th>
+                                <td>{{ attr.value }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                        {% else %}
+                        <p class="text-muted">暂无规格参数</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- 评价 -->
+                    <div class="tab-pane fade" id="reviews" role="tabpanel">
+                        {% if review_stats.total > 0 %}
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="text-center p-4">
+                                    <h2>{{ review_stats.average|floatformat:1 }}</h2>
+                                    <div class="rating-stars fs-4">
+                                        {% for i in "12345" %}
+                                        {% if forloop.counter <= review_stats.average %}
+                                        <i class="fas fa-star"></i>
+                                        {% else %}
+                                        <i class="far fa-star"></i>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <p class="text-muted">基于 {{ review_stats.total }} 条评价</p>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <!-- {% for dist in review_stats.distribution %}
+                                <div class="row align-items-center mb-2">
+                                    <div class="col-1">{{ dist.rating }}星</div>
+                                    <div class="col-8">
+                                        <div class="progress" style="height: 10px;">
+                                            <div class="progress-bar bg-warning" 
+                                                 style="width: {{ dist.count|divisibleby:review_stats.total|multiply:100 }}%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-1">{{ dist.count }}</div>
+                                </div>
+                                {% endfor %} -->
+
+{% for dist in review_stats.distribution %}
+<div class="row align-items-center mb-2">
+    <div class="col-1">{{ dist.rating }}星</div>
+    <div class="col-8">
+        <div class="progress" style="height: 10px;">
+            <div class="progress-bar bg-warning {% if review_stats.total == 0 %}w-0{% else %}w-{{ dist.percentage|floatformat:0 }}{% endif %}">
+            </div>
+        </div>
+    </div>
+    <div class="col-1">{{ dist.count }}</div>
+</div>
+{% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <hr>
+                        
+                        <!-- 评价列表 -->
+                        <h5>客户评价</h5>
+                        {% if reviews %}
+                        {% for review in reviews %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>{{ review.customer.user.username }}</strong>
+                                        <div class="rating-stars">
+                                            {% for i in "12345" %}
+                                            {% if forloop.counter <= review.rating %}
+                                            <i class="fas fa-star"></i>
+                                            {% else %}
+                                            <i class="far fa-star"></i>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">{{ review.created_at|date:"Y-m-d" }}</small>
+                                </div>
+                                <h6 class="mt-2">{{ review.title }}</h6>
+                                <p class="mb-0">{{ review.content }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <p class="text-muted">暂无评价</p>
+                        {% endif %}
+                        
+                        <!-- 评价表单 -->
+                        {% if user.is_authenticated and hasattr(user, 'customer_profile') %}
+                        <hr>
+                        <h5>发表评价</h5>
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="form-label">评分</label>
+                                <select name="rating" class="form-select" required>
+                                    <option value="">请选择评分</option>
+                                    {% for i in "54321" %}
+                                    <option value="{{ i }}">{{ i }}星</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">评价标题</label>
+                                <input type="text" name="title" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">评价内容</label>
+                                <textarea name="content" class="form-control" rows="4" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">提交评价</button>
+                        </form>
+                        {% elif not user.is_authenticated %}
+                        <div class="alert alert-info">
+                            请<a href="{% url 'accounts:login' %}?next={{ request.path }}">登录</a>后发表评价
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 相关产品 -->
+{% if related_products %}
+<div class="row mb-5">
+    <div class="col-12">
+        <h3 class="mb-4">相关产品</h3>
+        <div class="row">
+            {% for product in related_products %}
+            <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                {% include "products/includes/product_card.html" with product=product %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

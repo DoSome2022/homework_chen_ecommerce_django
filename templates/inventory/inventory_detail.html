@@ -1,0 +1,79 @@
+<!-- /inventory/inventory_detail.html -->
+
+{% extends 'inventory/base.html' %}
+{% block title %}{{ inventory.product.name }} - 庫存詳情{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">{{ inventory.product.name }} (SKU: {{ inventory.product.sku }})</h2>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>庫存狀態</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h3 class="text-primary">{{ inventory.quantity }}</h3>
+                        <p>總數量</p>
+                    </div>
+                    <div class="col-4">
+                        <h3 class="text-success">{{ inventory.available_quantity }}</h3>
+                        <p>可用數量</p>
+                    </div>
+                    <div class="col-4">
+                        <h3 class="text-warning">{{ inventory.reserved_quantity }}</h3>
+                        <p>預留數量</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5>位置與批次資訊</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr><th>倉庫</th><td>{{ inventory.warehouse.name }} ({{ inventory.warehouse.code }})</td></tr>
+                    <tr><th>庫位</th><td>{{ inventory.location.code|default:'未指定' }}</td></tr>
+                    <tr><th>批次號</th><td>{{ inventory.batch_number|default:'-' }}</td></tr>
+                    <tr><th>生產日期</th><td>{{ inventory.manufacturing_date|default:'-' }}</td></tr>
+                    <tr><th>到期日期</th><td>{{ inventory.expiry_date|default:'-' }}</td></tr>
+                    <tr><th>狀態</th><td>
+                        <span class="badge bg-{% if inventory.status == 'active' %}success{% elif inventory.status == 'expired' %}danger{% else %}warning{% endif %}">
+                            {{ inventory.get_status_display }}
+                        </span>
+                    </td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>成本與價值</h5>
+            </div>
+            <div class="card-body text-center">
+                <h4>單位成本：¥{{ inventory.unit_cost }}</h4>
+                <h3 class="text-primary">總價值：¥{{ inventory.total_value }}</h3>
+                <small class="text-muted">最後更新：{{ inventory.last_updated|date:"Y-m-d H:i" }}</small>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>商品基本資訊</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>分類：</strong>{{ inventory.product.category.name }}</p>
+                <p><strong>品牌：</strong>{{ inventory.product.brand|default:'-' }}</p>
+                <p><strong>重量：</strong>{{ inventory.product.weight|default:'-' }} kg</p>
+                <p><strong>尺寸：</strong>{{ inventory.product.dimensions|default:'-' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

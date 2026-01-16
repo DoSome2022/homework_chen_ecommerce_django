@@ -1,0 +1,209 @@
+<!-- templates/inventory/inventory_form.html -->
+{% extends 'inventory/base.html' %}
+{% load static %}
+
+{% block title %}{{ title|default:'库存管理' }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    .required-field::after {
+        content: " *";
+        color: red;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card form-container">
+                <div class="card-header">
+                    <h4 class="mb-0">{{ title|default:'添加库存记录' }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="inventoryForm" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.product.id_for_label }}" class="form-label required-field">产品</label>
+                                {{ form.product }}
+                                {% if form.product.errors %}
+                                <div class="text-danger small">{{ form.product.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="{{ form.warehouse.id_for_label }}" class="form-label required-field">仓库</label>
+                                {{ form.warehouse }}
+                                {% if form.warehouse.errors %}
+                                <div class="text-danger small">{{ form.warehouse.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.location.id_for_label }}" class="form-label">存储位置</label>
+                                {{ form.location }}
+                                {% if form.location.errors %}
+                                <div class="text-danger small">{{ form.location.errors }}</div>
+                                {% endif %}
+                                <small class="text-muted">选择具体的货架或库位（可选）</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="{{ form.quantity.id_for_label }}" class="form-label required-field">数量</label>
+                                {{ form.quantity }}
+                                {% if form.quantity.errors %}
+                                <div class="text-danger small">{{ form.quantity.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="{{ form.unit_cost.id_for_label }}" class="form-label required-field">单位成本</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">¥</span>
+                                    {{ form.unit_cost }}
+                                </div>
+                                {% if form.unit_cost.errors %}
+                                <div class="text-danger small">{{ form.unit_cost.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label for="{{ form.status.id_for_label }}" class="form-label required-field">状态</label>
+                                {{ form.status }}
+                                {% if form.status.errors %}
+                                <div class="text-danger small">{{ form.status.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label for="{{ form.batch_number.id_for_label }}" class="form-label">批次号</label>
+                                {{ form.batch_number }}
+                                {% if form.batch_number.errors %}
+                                <div class="text-danger small">{{ form.batch_number.errors }}</div>
+                                {% endif %}
+                                <small class="text-muted">不填则自动生成</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.manufacturing_date.id_for_label }}" class="form-label">生产日期</label>
+                                {{ form.manufacturing_date }}
+                                {% if form.manufacturing_date.errors %}
+                                <div class="text-danger small">{{ form.manufacturing_date.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="{{ form.expiry_date.id_for_label }}" class="form-label">过期日期</label>
+                                {{ form.expiry_date }}
+                                {% if form.expiry_date.errors %}
+                                <div class="text-danger small">{{ form.expiry_date.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'inventory:inventory_list' %}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times"></i> 取消
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 保存
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // 动态加载位置选项
+    $('#id_warehouse').change(function() {
+        var warehouseId = $(this).val();
+        var $locationSelect = $('#id_location');
+        
+        if (warehouseId) {
+            // 显示加载提示
+            $locationSelect.prop('disabled', true);
+            $locationSelect.empty();
+            $locationSelect.append($('<option>', {
+                value: '',
+                text: '加载中...'
+            }));
+            
+            $.get('{% url "inventory:get_locations_by_warehouse" %}', 
+                  {warehouse_id: warehouseId}, 
+                  function(data) {
+                if (data.success) {
+                    $locationSelect.empty();
+                    $locationSelect.append($('<option>', {
+                        value: '',
+                        text: '选择位置...'
+                    }));
+                    $.each(data.locations, function(i, location) {
+                        $locationSelect.append($('<option>', {
+                            value: location.id,
+                            text: location.code + ' - ' + location.name
+                        }));
+                    });
+                } else {
+                    $locationSelect.empty();
+                    $locationSelect.append($('<option>', {
+                        value: '',
+                        text: '加载失败'
+                    }));
+                }
+                $locationSelect.prop('disabled', false);
+            }).fail(function() {
+                $locationSelect.empty();
+                $locationSelect.append($('<option>', {
+                    value: '',
+                    text: '加载失败'
+                }));
+                $locationSelect.prop('disabled', false);
+            });
+        } else {
+            $locationSelect.empty();
+            $locationSelect.append($('<option>', {
+                value: '',
+                text: '请先选择仓库'
+            }));
+            $locationSelect.prop('disabled', true);
+        }
+    });
+    
+    // 产品选择时自动填充默认值
+    $('#id_product').change(function() {
+        var productId = $(this).val();
+        if (productId) {
+            // 可以在这里添加获取产品信息并设置默认值的逻辑
+            // 例如：自动设置单位成本
+        }
+    });
+});
+</script>
+{% endblock %}

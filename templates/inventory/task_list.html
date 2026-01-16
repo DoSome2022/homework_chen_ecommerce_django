@@ -1,0 +1,50 @@
+<!-- /inventory/task_list.html -->
+
+{% extends 'inventory/base.html' %}
+{% block title %}任務中心{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>任務中心</h2>
+    <div>
+        <span class="badge bg-danger fs-6 me-2">緊急：{{ tasks|length }}</span>
+        <span class="badge bg-warning fs-6">進行中：{{ tasks.in_progress|length }}</span>
+    </div>
+</div>
+
+<div class="row">
+    {% for task in tasks %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card border-{% if task.priority == 'urgent' %}danger{% elif task.priority == 'high' %}warning{% else %}info{% endif %}">
+            <div class="card-header d-flex justify-content-between">
+                <strong>{{ task.get_task_type_display }}</strong>
+                <span class="badge bg-{% if task.status == 'completed' %}success{% elif task.status == 'in_progress' %}primary{% else %}secondary{% endif %}">
+                    {{ task.get_status_display }}
+                </span>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ task.task_number }}</h5>
+                <p class="card-text">{{ task.description|truncatewords:20 }}</p>
+                <ul class="list-unstyled small text-muted">
+                    <li>倉庫：{{ task.warehouse.name }}</li>
+                    <li>指派給：{{ task.assigned_to.get_full_name|default:'未指派' }}</li>
+                    <li>優先級：
+                        <span class="badge bg-{% if task.priority == 'urgent' %}danger{% elif task.priority == 'high' %}warning{% elif task.priority == 'medium' %}info{% else %}secondary{% endif %}">
+                            {{ task.get_priority_display }}
+                        </span>
+                    </li>
+                    <li>預計時長：{{ task.estimated_duration|default:'-' }} 分鐘</li>
+                </ul>
+            </div>
+            <div class="card-footer text-end">
+                <small>建立時間：{{ task.created_at|date:"m-d H:i" }}</small>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-success text-center">目前無待處理任務</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

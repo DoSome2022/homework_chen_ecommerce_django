@@ -1,0 +1,200 @@
+<!-- templates/inventory/quick_add_inventory.html -->
+{% extends 'inventory/base.html' %}
+{% load static %}
+
+{% block title %}快速入库{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quick-add-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .product-info {
+        border-left: 4px solid #28a745;
+        padding-left: 15px;
+        margin: 20px 0;
+        display: none;
+    }
+    #scanIndicator {
+        font-size: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card quick-add-container">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-bolt"></i> 快速入库</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">扫描产品条码或手动输入SKU快速入库</p>
+                    
+                    <form method="post" id="quickAddForm">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.sku.id_for_label }}" class="form-label">SKU / 条码</label>
+                            <div class="input-group">
+                                {{ form.sku }}
+                                <button class="btn btn-outline-secondary" type="button" id="scanButton">
+                                    <i class="fas fa-barcode"></i> 扫描
+                                </button>
+                            </div>
+                            {% if form.sku.errors %}
+                            <div class="text-danger small">{{ form.sku.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">输入或扫描产品SKU</div>
+                        </div>
+                        
+                        <!-- 产品信息显示 -->
+                        <div class="product-info" id="productInfo">
+                            <h6>产品信息</h6>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <img id="productImage" src="" alt="产品图片" class="img-fluid rounded" style="display: none;">
+                                </div>
+                                <div class="col-md-9">
+                                    <p><strong>名称:</strong> <span id="productName">-</span></p>
+                                    <p><strong>SKU:</strong> <code id="productSku">-</code></p>
+                                    <p><strong>分类:</strong> <span id="productCategory">-</span></p>
+                                    <p><strong>当前库存:</strong> <span id="productStock">-</span></p>
+                                    <p><strong>成本价:</strong> ¥<span id="productCost">0.00</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.warehouse.id_for_label }}" class="form-label">仓库</label>
+                                {{ form.warehouse }}
+                                {% if form.warehouse.errors %}
+                                <div class="text-danger small">{{ form.warehouse.errors }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="{{ form.quantity.id_for_label }}" class="form-label">数量</label>
+                                {{ form.quantity }}
+                                {% if form.quantity.errors %}
+                                <div class="text-danger small">{{ form.quantity.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.batch_number.id_for_label }}" class="form-label">批次号</label>
+                                {{ form.batch_number }}
+                                {% if form.batch_number.errors %}
+                                <div class="text-danger small">{{ form.batch_number.errors }}</div>
+                                {% endif %}
+                                <small class="text-muted">不填则自动生成</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="{{ form.unit_cost.id_for_label }}" class="form-label">单位成本</label>
+                                {{ form.unit_cost }}
+                                {% if form.unit_cost.errors %}
+                                <div class="text-danger small">{{ form.unit_cost.errors }}</div>
+                                {% endif %}
+                                <small class="text-muted">不填则使用产品成本价</small>
+                            </div>
+                        </div>
+                        
+                        <!-- 扫描指示器 -->
+                        <div class="text-center mb-4" id="scanIndicator">
+                            <i class="fas fa-barcode text-muted"></i>
+                            <p class="text-muted small">等待扫描...</p>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'inventory:inventory_list' %}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-arrow-left"></i> 返回
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check"></i> 确认入库
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // SKU输入框自动聚焦
+    $('#id_sku').focus();
+    
+    // 扫描按钮点击事件
+    $('#scanButton').click(function() {
+        // 模拟扫描（实际项目中这里会调用扫描设备API）
+        $('#id_sku').val('').focus();
+        $('#scanIndicator').html('<i class="fas fa-spinner fa-spin text-warning"></i><p class="text-warning small">准备扫描...</p>');
+    });
+    
+    // SKU输入变化时获取产品信息
+    $('#id_sku').on('input', function() {
+        var sku = $(this).val();
+        if (sku.length >= 3) {
+            $.get('{% url "inventory:get_product_by_sku" %}', {sku: sku}, function(data) {
+                if (data.success) {
+                    // 显示产品信息
+                    $('#productName').text(data.product.name);
+                    $('#productSku').text(data.product.sku);
+                    $('#productCategory').text(data.product.category);
+                    $('#productStock').text(data.product.stock_quantity);
+                    $('#productCost').text(data.product.cost_price || '0.00');
+                    
+                    // 设置单位成本默认值
+                    if (data.product.cost_price) {
+                        $('#id_unit_cost').val(data.product.cost_price);
+                    }
+                    
+                    // 显示产品信息区域
+                    $('#productInfo').show();
+                    
+                    // 更新扫描指示器
+                    $('#scanIndicator').html('<i class="fas fa-check text-success"></i><p class="text-success small">产品识别成功</p>');
+                    
+                    // 自动聚焦到数量输入框
+                    $('#id_quantity').focus().select();
+                } else {
+                    // 隐藏产品信息
+                    $('#productInfo').hide();
+                    $('#scanIndicator').html('<i class="fas fa-times text-danger"></i><p class="text-danger small">' + data.message + '</p>');
+                }
+            });
+        }
+    });
+    
+    // 表单提交处理
+    $('#quickAddForm').submit(function(e) {
+        var sku = $('#id_sku').val();
+        if (!sku) {
+            e.preventDefault();
+            alert('请输入SKU');
+            return false;
+        }
+        
+        // 可以在这里添加提交前的验证逻辑
+        return true;
+    });
+    
+    // 监听Enter键，在SKU输入框按Enter时自动提交
+    $('#id_sku').keypress(function(e) {
+        if (e.which == 13) { // Enter键
+            e.preventDefault();
+            $('#quickAddForm').submit();
+        }
+    });
+});
+</script>
+{% endblock %}

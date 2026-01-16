@@ -1,0 +1,323 @@
+<!-- inventory/templates/inventory/warehouse_create.html -->
+{% extends 'inventory/base.html' %}
+{% block title %}新增倉庫{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>新增倉庫</h2>
+        <a href="{% url 'inventory:warehouse_list' %}" class="btn btn-secondary">返回列表</a>
+    </div>
+    
+    <!-- 進度指示器 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <ul class="nav nav-pills nav-fill" id="warehouseCreationTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" 
+                            data-bs-target="#basic" type="button" role="tab">
+                        <i class="bi bi-building"></i> 基本資訊
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="zones-tab" data-bs-toggle="tab" 
+                            data-bs-target="#zones" type="button" role="tab">
+                        <i class="bi bi-grid-3x3"></i> 倉庫區域
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="aisles-tab" data-bs-toggle="tab" 
+                            data-bs-target="#aisles" type="button" role="tab">
+                        <i class="bi bi-arrow-left-right"></i> 倉庫通道
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="shelves-tab" data-bs-toggle="tab" 
+                            data-bs-target="#shelves" type="button" role="tab">
+                        <i class="bi bi-boxes"></i> 倉庫貨架
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- 表單 -->
+    <form method="post" id="warehouseForm">
+        {% csrf_token %}
+        
+        <!-- 隱藏字段用於計數 -->
+        <input type="hidden" name="zone_count" id="zoneCount" value="1">
+        <input type="hidden" name="aisle_count" id="aisleCount" value="1">
+        <input type="hidden" name="shelf_count" id="shelfCount" value="1">
+        
+        <!-- 標籤內容 -->
+        <div class="tab-content" id="warehouseCreationTabsContent">
+            <!-- 基本資訊 -->
+            <div class="tab-pane fade show active" id="basic" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>倉庫基本資訊</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ field.errors|striptags }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 倉庫區域 -->
+            <div class="tab-pane fade" id="zones" role="tabpanel">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>倉庫區域設定</h5>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="addZoneForm()">
+                            <i class="bi bi-plus-circle"></i> 新增區域
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="zoneForms">
+                            <div class="zone-form mb-4 border-bottom pb-4">
+                                <h6>區域 #1</h6>
+                                <table class="table table-borderless">
+                                    {{ zone_form.as_table }}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 倉庫通道 -->
+            <div class="tab-pane fade" id="aisles" role="tabpanel">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>倉庫通道設定</h5>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="addAisleForm()">
+                            <i class="bi bi-plus-circle"></i> 新增通道
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="aisleForms">
+                            <div class="aisle-form mb-4 border-bottom pb-4">
+                                <h6>通道 #1</h6>
+                                <table class="table table-borderless">
+                                    {{ aisle_form.as_table }}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 倉庫貨架 -->
+            <div class="tab-pane fade" id="shelves" role="tabpanel">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>倉庫貨架設定</h5>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="addShelfForm()">
+                            <i class="bi bi-plus-circle"></i> 新增貨架
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="shelfForms">
+                            <div class="shelf-form mb-4 border-bottom pb-4">
+                                <h6>貨架 #1</h6>
+                                <table class="table table-borderless">
+                                    {{ shelf_form.as_table }}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 按鈕 -->
+        <div class="mt-4 d-flex justify-content-between">
+            <button type="button" class="btn btn-secondary" onclick="previousTab()">上一步</button>
+            <div>
+                <button type="button" class="btn btn-primary me-2" onclick="nextTab()">下一步</button>
+                <button type="submit" class="btn btn-success">建立倉庫</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+<style>
+    .nav-pills .nav-link {
+        color: #495057;
+        border-radius: 0.375rem;
+        margin: 0 2px;
+    }
+    .nav-pills .nav-link.active {
+        background-color: #0d6efd;
+        color: white;
+    }
+    .tab-pane {
+        padding-top: 20px;
+    }
+    .form-table td {
+        padding: 8px;
+        vertical-align: top;
+    }
+</style>
+
+<script>
+    let currentTab = 0;
+    const tabs = ['basic', 'zones', 'aisles', 'shelves'];
+    
+    function showTab(n) {
+        const tabButtons = document.querySelectorAll('#warehouseCreationTabs button');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        
+        // 隱藏所有標籤
+        tabPanes.forEach(pane => pane.classList.remove('show', 'active'));
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        
+        // 顯示當前標籤
+        tabPanes[n].classList.add('show', 'active');
+        tabButtons[n].classList.add('active');
+        currentTab = n;
+        
+        // 更新按鈕狀態
+        updateButtons();
+    }
+    
+    function nextTab() {
+        if (currentTab < tabs.length - 1) {
+            showTab(currentTab + 1);
+        }
+    }
+    
+    function previousTab() {
+        if (currentTab > 0) {
+            showTab(currentTab - 1);
+        }
+    }
+    
+    function updateButtons() {
+        const prevBtn = document.querySelector('button[onclick="previousTab()"]');
+        const nextBtn = document.querySelector('button[onclick="nextTab()"]');
+        
+        if (currentTab === 0) {
+            prevBtn.disabled = true;
+            prevBtn.classList.add('disabled');
+        } else {
+            prevBtn.disabled = false;
+            prevBtn.classList.remove('disabled');
+        }
+        
+        if (currentTab === tabs.length - 1) {
+            nextBtn.disabled = true;
+            nextBtn.classList.add('disabled');
+        } else {
+            nextBtn.disabled = false;
+            nextBtn.classList.remove('disabled');
+        }
+    }
+    
+    // 動態添加表單功能
+    async function addForm(type) {
+        let countField, containerId, formIndex;
+        
+        if (type === 'zone') {
+            countField = document.getElementById('zoneCount');
+            containerId = 'zoneForms';
+            formIndex = parseInt(countField.value);
+        } else if (type === 'aisle') {
+            countField = document.getElementById('aisleCount');
+            containerId = 'aisleForms';
+            formIndex = parseInt(countField.value);
+        } else if (type === 'shelf') {
+            countField = document.getElementById('shelfCount');
+            containerId = 'shelfForms';
+            formIndex = parseInt(countField.value);
+        }
+        
+        try {
+            const response = await fetch('{% url "inventory:add_form_field" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    form_type: type,
+                    index: formIndex
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                const container = document.getElementById(containerId);
+                const newFormDiv = document.createElement('div');
+                newFormDiv.className = `${type}-form mb-4 border-bottom pb-4`;
+                newFormDiv.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6>${type === 'zone' ? '區域' : type === 'aisle' ? '通道' : '貨架'} #${formIndex + 1}</h6>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="removeForm(this, '${type}', ${formIndex})">
+                            <i class="bi bi-trash"></i> 移除
+                        </button>
+                    </div>
+                    <table class="table table-borderless">${data.html}</table>
+                `;
+                container.appendChild(newFormDiv);
+                countField.value = formIndex + 1;
+            } else {
+                alert('添加表單失敗：' + data.error);
+            }
+        } catch (error) {
+            alert('網絡錯誤：' + error.message);
+        }
+    }
+    
+    function addZoneForm() { addForm('zone'); }
+    function addAisleForm() { addForm('aisle'); }
+    function addShelfForm() { addForm('shelf'); }
+    
+    function removeForm(button, type, index) {
+        const formDiv = button.closest(`.${type}-form`);
+        formDiv.remove();
+        
+        // 重新編號
+        const forms = document.querySelectorAll(`.${type}-form`);
+        forms.forEach((form, idx) => {
+            const title = form.querySelector('h6');
+            title.textContent = `${type === 'zone' ? '區域' : type === 'aisle' ? '通道' : '貨架'} #${idx + 1}`;
+        });
+        
+        // 更新計數
+        let countField;
+        if (type === 'zone') {
+            countField = document.getElementById('zoneCount');
+        } else if (type === 'aisle') {
+            countField = document.getElementById('aisleCount');
+        } else if (type === 'shelf') {
+            countField = document.getElementById('shelfCount');
+        }
+        countField.value = forms.length;
+    }
+    
+    // 初始顯示第一個標籤
+    document.addEventListener('DOMContentLoaded', function() {
+        showTab(0);
+        updateButtons();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,161 @@
+<!-- /inventory/warehouse_detail.html -->
+
+{% extends 'inventory/base.html' %}
+{% block title %}{{ warehouse.name }} - 倉庫詳情{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">{{ warehouse.name }} ({{ warehouse.code }})</h2>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>基本資訊</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr><th>類型</th><td>{{ warehouse.get_warehouse_type_display }}</td></tr>
+                    <tr><th>地理位置</th><td>{{ warehouse.location }}</td></tr>
+                    <tr><th>詳細地址</th><td>{{ warehouse.address }}</td></tr>
+                    <tr><th>聯絡人</th><td>{{ warehouse.contact_person }}</td></tr>
+                    <tr><th>電話</th><td>{{ warehouse.phone }}</td></tr>
+                    <tr><th>Email</th><td>{{ warehouse.email }}</td></tr>
+                    <tr><th>負責人</th><td>{{ warehouse.manager.get_full_name|default:'未指派' }}</td></tr>
+                    <tr><th>狀態</th><td>
+                        <span class="badge bg-{% if warehouse.is_active %}success{% else %}secondary{% endif %}">
+                            {% if warehouse.is_active %}啟用{% else %}停用{% endif %}
+                        </span>
+                    </td></tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>操作</h5>
+            </div>
+            <div class="card-body">
+                <div class="btn-group" role="group">
+                    <a href="{% url 'inventory:warehouse_update' warehouse.pk %}" class="btn btn-warning">
+                        <i class="bi bi-pencil"></i> 編輯
+                    </a>
+                    <a href="{% url 'inventory:warehouse_delete' warehouse.pk %}" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> 刪除
+                    </a>
+                    <a href="{% url 'inventory:warehouse_list' %}" class="btn btn-secondary">
+                        <i class="bi bi-list"></i> 返回列表
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5>容量與使用率</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <h4>{{ warehouse.total_capacity|floatformat:2 }} m³</h4>
+                        <p class="text-muted">總容量</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h4>{{ warehouse.used_capacity|floatformat:2 }} m³</h4>
+                        <p class="text-muted">已使用</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h4>{{ warehouse.available_capacity|floatformat:2 }} m³</h4>
+                        <p class="text-muted">可用</p>
+                    </div>
+                </div>
+                
+                <!-- 修正這裡：使用 data-attribute 並用 JavaScript 設置寬度 -->
+                {% with percentage=warehouse.capacity_percentage|default:0 %}
+                <div class="progress mt-3" style="height: 30px;">
+                    <div class="progress-bar" 
+                         id="capacity-progress-bar"
+                         role="progressbar"
+                         data-percentage="{{ percentage|floatformat:2 }}"
+                         style="font-size: 16px; line-height: 30px;"
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                        正在加載...
+                    </div>
+                </div>
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>區域統計</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for zone in warehouse.zones.all %}
+                <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    {{ zone.name }} ({{ zone.get_zone_type_display }})
+                    <span class="badge bg-primary rounded-pill">{{ zone.occupancy_rate|floatformat:1 }}%</span>
+                </a>
+                {% empty %}
+                <div class="list-group-item text-muted text-center">尚未建立區域</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const progressBar = document.getElementById('capacity-progress-bar');
+    if (progressBar) {
+        const percentage = parseFloat(progressBar.getAttribute('data-percentage')) || 0;
+        
+        // 設置寬度
+        progressBar.style.width = percentage + '%';
+        progressBar.setAttribute('aria-valuenow', percentage);
+        progressBar.textContent = percentage.toFixed(1) + '% 使用率';
+        
+        // 設置顏色
+        if (percentage > 80) {
+            progressBar.classList.add('bg-danger');
+        } else if (percentage > 60) {
+            progressBar.classList.add('bg-warning');
+        } else {
+            progressBar.classList.add('bg-success');
+        }
+    }
+});
+</script>
+
+<style>
+    /* 確保進度條文字可讀 */
+    .progress-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 50px; /* 確保文字不被截斷 */
+        transition: width 0.5s ease-in-out;
+    }
+    
+    /* 確保按鈕樣式正確 */
+    .btn-group .btn {
+        margin-right: 5px;
+    }
+    
+    .btn-group .btn:last-child {
+        margin-right: 0;
+    }
+    
+    /* 進度條容器 */
+    .progress {
+        background-color: #e9ecef;
+        border-radius: 0.375rem;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}

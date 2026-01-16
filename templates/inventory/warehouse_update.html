@@ -1,0 +1,39 @@
+<!-- inventory/templates/inventory/warehouse_update.html -->
+{% extends 'inventory/base.html' %}
+{% block title %}更新倉庫 - {{ warehouse.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>更新倉庫：{{ warehouse.name }}</h2>
+        <a href="{% url 'inventory:warehouse_detail' warehouse.pk %}" class="btn btn-secondary">返回詳情</a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                    <div class="form-text">{{ field.help_text }}</div>
+                    {% endif %}
+                    {% if field.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ field.errors|striptags }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">更新倉庫</button>
+                    <a href="{% url 'inventory:warehouse_list' %}" class="btn btn-secondary">取消</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
