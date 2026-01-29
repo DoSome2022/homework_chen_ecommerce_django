@@ -333,11 +333,29 @@ class WarehouseCreateView( CreateView):
     success_url = reverse_lazy('inventory:warehouse_list')
     
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['zone_form'] = WarehouseZoneForm(prefix='zone_0')
-        context['aisle_form'] = WarehouseAisleForm(prefix='aisle_0')
-        context['shelf_form'] = WarehouseShelfForm(prefix='shelf_0')
-        return context
+            context = super().get_context_data(**kwargs)
+            # 初始狀態提供一個空的表單
+            if 'zone_forms' not in context:
+                context['zone_form'] = WarehouseZoneForm(prefix='zone_0')
+            if 'aisle_forms' not in context:
+                context['aisle_form'] = WarehouseAisleForm(prefix='aisle_0')
+            if 'shelf_forms' not in context:
+                context['shelf_form'] = WarehouseShelfForm(prefix='shelf_0')
+            return context
+    
+    def form_invalid(self, form):
+        # 當驗證失敗時，也要把動態表單相關資料傳回去
+        data = self.request.POST
+        formset = WarehouseCreationFormSet(data)
+        
+        # 即使 formset 無效，也要傳回它的表單實例，讓錯誤可以顯示
+        return self.render_to_response(self.get_context_data(
+            form=form,
+            zone_forms=formset.zone_forms if hasattr(formset, 'zone_forms') else [],
+            aisle_forms=formset.aisle_forms if hasattr(formset, 'aisle_forms') else [],
+            shelf_forms=formset.shelf_forms if hasattr(formset, 'shelf_forms') else [],
+            formset=formset,  # 如果模板之後要用 formset.errors 也可以
+        ))
     
     def form_valid(self, form):
         # 獲取額外的表單數據
@@ -353,12 +371,13 @@ class WarehouseCreateView( CreateView):
             return redirect(self.success_url)
         else:
             # 將錯誤返回給模板
-            return self.render_to_response(self.get_context_data(
-                form=form,
-                zone_forms=formset.zone_forms,
-                aisle_forms=formset.aisle_forms,
-                shelf_forms=formset.shelf_forms,
-            ))
+            # return self.render_to_response(self.get_context_data(
+            #     form=form,
+            #     zone_forms=formset.zone_forms,
+            #     aisle_forms=formset.aisle_forms,
+            #     shelf_forms=formset.shelf_forms,
+            #))
+            return self.form_invalid(form)
 
 # 更新倉庫視圖
 class WarehouseUpdateView( UpdateView):
@@ -474,8 +493,7 @@ class InventoryDetailView( DetailView):
         return context
 
 
-class InventoryCreateView( CreateView):
-    """创建库存记录视图"""
+class InventoryCreateView(CreateView):
     model = Inventory
     form_class = InventoryForm
     template_name = 'inventory/inventory_form.html'
@@ -488,27 +506,54 @@ class InventoryCreateView( CreateView):
     
     def form_valid(self, form):
         with transaction.atomic():
-            inventory = form.save()
+            # 改用 get_or_create，避免重複鍵錯誤
+            inventory, created = Inventory.objects.get_or_create(
+                product=form.cleaned_data['product'],
+                warehouse=form.cleaned_data['warehouse'],
+                batch_number=form.cleaned_data.get('batch_number', ''),
+                defaults={
+                    'quantity': form.cleaned_data['quantity'],
+                    'reserved_quantity': 0,
+                    'available_quantity': form.cleaned_data['quantity'],
+                    'unit_cost': form.cleaned_data.get('unit_cost', 0),
+                    'status': 'active',
+                    'manufacturing_date': form.cleaned_data.get('manufacturing_date'),
+                    'expiry_date': form.cleaned_data.get('expiry_date'),
+                    # 如果還有其他必要欄位，可在此補上
+                }
+            )
             
-            # 创建仓库交易记录
+            if not created:
+                # 已存在 → 累加數量
+                inventory.quantity += form.cleaned_data['quantity']
+                inventory.available_quantity += form.cleaned_data['quantity']
+                inventory.save(update_fields=['quantity', 'available_quantity'])
+                action_msg = '已累加至現有庫存'
+            else:
+                action_msg = '已成功新增庫存記錄'
+            
+            # 無論新增或累加，都建立交易記錄
             WarehouseTransaction.objects.create(
                 transaction_type='receiving',
                 product=inventory.product,
-                quantity=inventory.quantity,
+                quantity=form.cleaned_data['quantity'],  # 記錄本次入庫數量
                 warehouse=inventory.warehouse,
                 to_location=inventory.location,
                 staff=self.request.user.staff_profile if hasattr(self.request.user, 'staff_profile') else None,
                 reference_number=f'INV-{inventory.id}',
-                notes=f'入库 {inventory.quantity} 件 {inventory.product.name}'
+                notes=f'入庫 {form.cleaned_data["quantity"]} 件 {inventory.product.name}（{"累加" if not created else "新增"}）'
             )
             
-            messages.success(self.request, f'已成功添加库存记录: {inventory.product.name} x {inventory.quantity}')
+            messages.success(
+                self.request,
+                f'{action_msg}：{inventory.product.name} x {form.cleaned_data["quantity"]}（總數：{inventory.quantity}）'
+            )
         
         return super().form_valid(form)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = '添加库存记录'
+        context['title'] = '添加庫存記錄'
         return context
 
 

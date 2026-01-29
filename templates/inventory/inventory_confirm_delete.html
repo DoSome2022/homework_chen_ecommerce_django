@@ -1,0 +1,51 @@
+{% extends 'inventory/base.html' %}
+{% block title %}刪除庫存記錄 - 確認{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-danger shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">刪除確認</h4>
+                </div>
+                
+                <div class="card-body">
+                    <h5 class="card-title text-danger mb-4">
+                        您確定要刪除這筆庫存記錄嗎？
+                    </h5>
+                    
+                    <div class="alert alert-warning">
+                        <strong>即將刪除的項目：</strong><br>
+                        <div class="mt-2">
+                            <strong>產品：</strong> {{ object.product.name }}<br>
+                            <strong>倉庫：</strong> {{ object.warehouse.name }}<br>
+                            <strong>數量：</strong> {{ object.quantity }} 件<br>
+                            <strong>批次號：</strong> {{ object.batch_number|default:"無" }}<br>
+                            <strong>狀態：</strong> {{ object.get_status_display }}
+                        </div>
+                    </div>
+
+                    <p class="text-muted small">
+                        此操作<span class="fw-bold text-danger">無法復原</span>，刪除後將無法恢復該筆庫存記錄。
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-3 mt-4">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="bi bi-trash3 me-2"></i>確認刪除
+                            </button>
+                            
+                            <a href="{% url 'inventory:inventory_detail' object.pk %}" 
+                               class="btn btn-outline-secondary btn-lg">
+                                <i class="bi bi-arrow-left me-2"></i>取消，返回
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

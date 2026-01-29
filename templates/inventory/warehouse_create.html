@@ -40,7 +40,92 @@
             </ul>
         </div>
     </div>
-    
+<!-- =====================================================
+     完整錯誤顯示區塊 - 支援所有 Django 表單錯誤類型
+     放置位置：進度指示器下方，表單上方
+======================================================= -->
+{% if form.errors %}
+<div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <strong>建立倉庫失敗，請修正以下錯誤：</strong>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+
+    <!-- 1. 非欄位錯誤（non_field_errors，最重要） -->
+    {% if form.non_field_errors %}
+    <div class="mt-3 mb-2">
+        <h6 class="alert-heading"><i class="bi bi-info-circle"></i> 表單整體錯誤：</h6>
+        <ul class="mb-0">
+            {% for error in form.non_field_errors %}
+            <li>{{ error|capfirst }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- 2. 每個欄位的錯誤（已驗證安全語法） -->
+    {% for field in form %}
+        {% if field.errors %}
+        <div class="mt-2 p-2 bg-light border-start border-danger border-4 rounded">
+            <strong>{{ field.label|default:field.name|title }}：</strong>
+            <ul class="mb-0 small text-danger">
+                {% for error in field.errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    {% endfor %}
+
+    <!-- 3. 其他子表單錯誤（zone_form, aisle_form, shelf_form） -->
+    {% if zone_form and zone_form.errors %}
+    <div class="mt-3 p-3 bg-warning bg-opacity-10 border border-warning rounded">
+        <h6 class="text-warning mb-2">
+            <i class="bi bi-geo-alt-fill"></i> 倉庫區域設定錯誤：
+        </h6>
+        <ul class="mb-0 small">
+            {% for field in zone_form %}
+                {% if field.errors %}
+                <li><strong>{{ field.label }}：</strong> {{ field.errors|join:", " }}</li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if aisle_form and aisle_form.errors %}
+    <div class="mt-3 p-3 bg-info bg-opacity-10 border border-info rounded">
+        <h6 class="text-info mb-2">
+            <i class="bi bi-arrow-left-right"></i> 倉庫通道設定錯誤：
+        </h6>
+        <ul class="mb-0 small">
+            {% for field in aisle_form %}
+                {% if field.errors %}
+                <li><strong>{{ field.label }}：</strong> {{ field.errors|join:", " }}</li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if shelf_form and shelf_form.errors %}
+    <div class="mt-3 p-3 bg-secondary bg-opacity-10 border border-secondary rounded">
+        <h6 class="text-secondary mb-2">
+            <i class="bi bi-boxes"></i> 倉庫貨架設定錯誤：
+        </h6>
+        <ul class="mb-0 small">
+            {% for field in shelf_form %}
+                {% if field.errors %}
+                <li><strong>{{ field.label }}：</strong> {{ field.errors|join:", " }}</li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+<!-- ===================================================== -->
+
+
     <!-- 表單 -->
     <form method="post" id="warehouseForm">
         {% csrf_token %}
